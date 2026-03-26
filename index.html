@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRIKE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#d4c5a9;font-family:Georgia,serif;overflow:hidden;width:100vw;height:100vh;cursor:pointer}
+#title{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:#0a0a0f}
+#title h1{font-size:4rem;color:#c9a84c;letter-spacing:.3em;margin-bottom:.2em}
+#title h2{font-size:1.5rem;color:#8a7a5a;letter-spacing:.4em;margin-bottom:3em}
+.mbtn{display:block;background:none;border:1px solid rgba(201,168,76,.35);color:#c9a84c;font-size:1.1rem;padding:.8em 3em;margin:.5em auto;cursor:pointer;letter-spacing:.1em;min-width:220px;transition:background .2s}
+.mbtn:hover{background:rgba(201,168,76,.12)}
+#game{position:fixed;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;justify-content:flex-end;padding:60px 0}
+#bg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:-1;transition:background 1.5s}
+#box{max-width:780px;margin:0 auto;padding:0 40px;width:100%}
+#spk{font-size:.85rem;color:#c9a84c;letter-spacing:.15em;min-height:1.4em;margin-bottom:.5em}
+#txt{font-size:1.05rem;line-height:2;min-height:100px;letter-spacing:.05em}
+.narrator{color:#9a8a6a;font-style:italic}
+.dialogue{color:#e8dcc8}
+.lyrics{color:#8a7a5a;font-style:italic}
+.francis-voice{color:#b8a0d4}
+.arthur-voice{color:#a8c47a}
+.ivan-voice{color:#7ab8c4}
+#hint{position:fixed;bottom:20px;right:30px;color:rgba(201,168,76,.35);font-size:.75rem;animation:p 2s ease infinite}
+@keyframes p{0%,100%{opacity:.3}50%{opacity:.8}}
+#choices{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;flex-direction:column;align-items:center;gap:14px;z-index:20}
+.cbtn{background:rgba(10,10,15,.9);border:1px solid rgba(201,168,76,.3);color:#d4c5a9;font-size:1rem;padding:.9em 2.5em;cursor:pointer;min-width:280px;text-align:center;transition:all .3s;letter-spacing:.08em}
+.cbtn:hover{background:rgba(201,168,76,.12);border-color:#c9a84c;color:#c9a84c}
+#vignette{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.65) 100%)}
+#rain{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity 1s;z-index:1}
+.rd{position:absolute;width:1px;background:linear-gradient(transparent,rgba(174,194,224,.45));animation:fall linear infinite}
+@keyframes fall{0%{transform:translateY(-100vh)}100%{transform:translateY(100vh)}}
+#fade{position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0f;pointer-events:none;opacity:0;transition:opacity .6s;z-index:5}
+#chov{position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0f;display:none;align-items:center;justify-content:center;flex-direction:column;z-index:30;opacity:0;transition:opacity 1.2s}
+#chov h1{font-size:2.8rem;color:#c9a84c;letter-spacing:.3em}
+#chov h2{font-size:1.3rem;color:#8a7a5a;margin-top:.5em;letter-spacing:.3em}
+#chapsel{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,15,.97);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:25}
+#chapsel h2{color:#c9a84c;font-size:1.3rem;margin-bottom:1.5em;letter-spacing:.2em}
+.chbtn{background:none;border:1px solid rgba(201,168,76,.2);color:#d4c5a9;font-size:1rem;padding:.9em 2.5em;margin:.4em;cursor:pointer;width:300px;text-align:left;transition:all .3s}
+.chbtn:hover{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.4)}
+.chbtn span{display:block;font-size:.75rem;color:#8a7a5a;margin-top:.2em}
+#hud{position:fixed;top:12px;right:16px;z-index:20;display:none;gap:8px}
+.hbtn{background:none;border:none;color:rgba(201,168,76,.4);font-size:.75rem;cursor:pointer;padding:4px 8px;transition:color .3s}
+.hbtn:hover{color:#c9a84c}
+</style>
+</head>
+<body>
+<div id="rain"></div>
+<div id="vignette"></div>
+<div id="fade"></div>
+<div id="chov"><h1 id="cen"></h1><h2 id="czh"></h2></div>
+
+<div id="title">
+  <h1>STRIKE</h1>
+  <h2>引燃</h2>
+  <button class="mbtn" onclick="startGame()">开始游戏</button>
+  <button class="mbtn" onclick="openChapSel()">章节选择</button>
+  <button class="mbtn" onclick="loadGame()">继续游戏</button>
+</div>
+
+<div id="chapsel">
+  <h2>CHAPTERS</h2>
+  <button class="chbtn" onclick="jumpCh(0)">第一章 · 引燃<span>Strike</span></button>
+  <button class="chbtn" onclick="jumpCh(1)">第二章 · 炽烧<span>Conflagration</span></button>
+  <button class="chbtn" onclick="jumpCh(2)">第三章 · 余烬<span>Ashes</span></button>
+  <button class="chbtn" onclick="jumpCh(3)">终章<span>Finale</span></button>
+  <button class="chbtn" onclick="closeChapSel()" style="color:#5a5040;border-color:rgba(201,168,76,.1);margin-top:.8em">返回</button>
+</div>
+
+<div id="game">
+  <div id="bg"></div>
+  <div id="box">
+    <div id="spk"></div>
+    <div id="txt"></div>
+  </div>
+</div>
+<div id="choices"></div>
+<div id="hint">点击继续 ▸</div>
+<div id="hud">
+  <button class="hbtn" onclick="saveGame()">存档</button>
+  <button class="hbtn" onclick="openChapSel()">章节</button>
+</div>
+
+<script>
+// ===== MINIMAL ENGINE =====
+let cur = 0, typing = false, timer = null, scenes = [], started = false;
+const state = {};
+
+const $ = id => document.getElementById(id);
+
+// Rain
+(function(){
+  const r = $('rain');
+  for(let i=0;i<60;i++){
+    const d=document.createElement('div');d.className='rd';
+    d.style.left=Math.random()*100+'%';d.style.height=(8+Math.random()*18)+'px';
+    d.style.animationDuration=(0.4+Math.random()*.6)+'s';d.style.animationDelay=Math.random()*2+'s';
+    d.style.opacity=0.15+Math.random()*.35;r.appendChild(d);
+  }
+})();
+
+function setRain(on){ $('rain').style.opacity = on ? '.4' : '0'; }
+
+function showScene(idx){
+  if(idx<0||idx>=scenes.length) return;
+  cur = idx;
+  const s = scenes[idx];
+  if(!s) return;
+
+  if(s.rain===false) setRain(false); else setRain(true);
+  if(s.bg) $('bg').style.background = s.bg;
+
+  const spk = $('spk');
+  spk.textContent = s.speaker||'';
+  spk.className = s.speakerClass||'';
+
+  const txt = $('txt');
+  txt.className = s.textClass||'';
+  txt.textContent = '';
+  $('choices').style.display='none';
+  $('hint').style.display = s.choices?'none':'block';
+
+  const chars = (s.text||'').split('');
+  let ci=0; typing=true;
+  clearInterval(timer);
+  timer = setInterval(()=>{
+    if(ci<chars.length){ txt.textContent+=chars[ci++]; }
+    else{ clearInterval(timer); typing=false; if(s.choices) showChoices(s.choices); }
+  }, 28);
+}
+
+function skipType(){
+  if(!typing) return false;
+  clearInterval(timer); typing=false;
+  const s=scenes[cur];
+  $('txt').textContent = s.text||'';
+  if(s.choices) showChoices(s.choices);
+  return true;
+}
+
+function advance(){
+  if(!started) return;
+  if($('chapsel').style.display==='flex') return;
+  if($('choices').style.display==='flex') return;
+  if(skipType()) return;
+  const s=scenes[cur];
+  const next = (s&&s.next!==undefined) ? s.next : cur+1;
+  doTransition(next);
+}
+
+function doTransition(idx){
+  const s = scenes[idx];
+  if(s&&s.chapterTitle){
+    showChTitle(s.chapterTitle.en, s.chapterTitle.zh, ()=>showScene(idx));
+    return;
+  }
+  const fade=$('fade');
+  fade.style.opacity='1';
+  setTimeout(()=>{ showScene(idx); setTimeout(()=>{ fade.style.opacity='0'; },50); },650);
+}
+
+function showChoices(choices){
+  const el=$('choices'); el.innerHTML=''; el.style.display='flex';
+  $('hint').style.display='none';
+  choices.forEach(c=>{
+    const b=document.createElement('button'); b.className='cbtn'; b.textContent=c.text;
+    b.onclick=()=>{ el.style.display='none'; if(c.flag) state[c.flag]=c.value; doTransition(c.next); };
+    el.appendChild(b);
+  });
+}
+
+function showChTitle(en,zh,cb){
+  const ov=$('chov');
+  $('cen').textContent=en; $('czh').textContent=zh;
+  ov.style.display='flex';
+  setTimeout(()=>ov.style.opacity='1',50);
+  setTimeout(()=>{ ov.style.opacity='0'; setTimeout(()=>{ ov.style.display='none'; cb(); },1300); },3000);
+}
+
+function startGame(){ launchFrom(0); }
+function loadGame(){
+  const d=localStorage.getItem('strike_save');
+  if(!d){alert('没有存档');return;}
+  const p=JSON.parse(d); Object.assign(state,p.state||{}); launchFrom(p.cur||0);
+}
+function saveGame(){ localStorage.setItem('strike_save',JSON.stringify({cur,state})); }
+function openChapSel(){ $('chapsel').style.display='flex'; }
+function closeChapSel(){ $('chapsel').style.display='none'; }
+const chStarts=[0,73,193,304];
+function jumpCh(c){ closeChapSel(); launchFrom(chStarts[c]); }
+
+function launchFrom(idx){
+  $('title').style.display='none';
+  $('game').style.display='flex';
+  $('hud').style.display='flex';
+  setTimeout(() => { started = true; }, 50); // 防点击冒泡
+  doTransition(idx);
+}
+
+document.addEventListener('click', e=>{
+  if(!started) return;
+  if(e.target.closest('button')) return;
+  advance();
+});
+document.addEventListener('keydown', e=>{
+  if(!started) return;
+  if(['Space','Enter','ArrowRight'].includes(e.code)){ e.preventDefault(); advance(); }
+});
+
+const S=(text,opts={})=>({text,...opts});
+scenes=[
+// ========== CHAPTER 1: IGNITION ==========
+// 0
+S("媒体将这一年称为\"预兆之年\"。就像日全食前的风，街头的一切都在慢慢变凉，直到天黑到像是太阳一去不回。", {
+  bg: 'linear-gradient(180deg, #0a0a12 0%, #12121f 100%)',
+  rain: true, letterbox: true, textClass: 'narrator',
+  chapterTitle: { en: 'STRIKE', zh: '引燃' }
+}),
+// 1
+S("1992年春，洛杉矶陷入骚乱，火焰在电视屏幕的边缘蔓延；曼联在足总杯中输给诺丁汉森林，球迷在酒吧里摔碎了酒瓶；查尔斯王子宣布与戴安娜分居，精心美化的皇室童话正式宣告破产；苏联的尸体还没凉透，东欧间谍网络却已经在布拉格重组。", {
+  textClass: 'narrator'
+}),
+// 2
+S("三月的一天，葡萄牙外交部一位年轻官员的尸体出现在泰晤士河畔。他的死讯被简短掩埋在《卫报》第13版，头版还在讨论克林顿的性丑闻和东区新开的唐顿百货。", {
+  textClass: 'narrator'
+}),
+// 3
+S("伦敦没什么不同，天总是湿的，报纸也总是湿的，整座城市潮湿得发霉。苏活区的霓虹灯下，醉汉、妓女与神职人员共用一条街道，落魄歌手在深夜电台中哼着不知所谓的歌，夜晚漫长而沉闷。", {
+  textClass: 'narrator'
+}),
+// 4
+S("于是，人们开始期待一场爆炸，或至少一件能让他们记住当下的事情。不是因为愤怒，也不仅仅出于欲望。或许在走投无路之时，这是把世界从梦游中唤醒的唯一方式。", {
+  textClass: 'narrator'
+}),
+// 5
+S("傍晚七点，苏活区洲际酒店的行政套房内，落地窗外是一排整洁的滴水轨迹，城市灰白得像张尚未润色的底片。", {
+  bg: 'linear-gradient(180deg, #0f0e14 0%, #1a1520 100%)'
+}),
+// 6
+S("弗朗西斯·波诺弗瓦瞥了一眼穿衣镜中的自己：赤身裸体，在昏黄的灯光中抽着烟，他靠在床头柔软的靠枕中，金发散乱挡住了眼睛，薄毯搭在他的腿上，没有完全遮住，另一半已经垂在了地上。电话听筒放在枕边，贴着他的肩膀。", {}),
+// 7
+S("荷兰的影子基金正在控股。家族目前占比百分之四十七，我会让他们满意。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 8
+S("你做得太顺了，弗朗西斯。家族不是怀疑你，我们只是提醒你——你拥有的一切，都是家族的。", {
+  speaker: '舅舅', textClass: 'dialogue'
+}),
+// 9
+S("我当然记得。我母亲最近怎么样？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 10
+S("还好。大多数时候都一言不发，我们请了最好的人照顾她，但听到你的消息时，她心情还不错。", {
+  speaker: '舅舅', textClass: 'dialogue'
+}),
+// 11
+S("我从来不会让她失望。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 12
+S("你首先该做的，是不让我们失望。", {
+  speaker: '舅舅', textClass: 'dialogue'
+}),
+// 13
+S("那就是我一生的追求。我对家族始终心怀感恩。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 14
+S("他挂断电话时窗外的雨还在下，但室内忽然安静得有些突兀。他起身，走过客厅，脚步声在地毯上毫无声响。他拐过玄关角落，拉开浴室门，空气中突然弥漫起一种血液的金属气息——尽管消毒水和酒店高级香薰的味道在竭力掩盖，那股腥气却仍穿透而出。", {
+  bg: 'linear-gradient(180deg, #12080a 0%, #1a0f12 100%)'
+}),
+// 15
+S("浴缸里什么都没有了，只剩一些细小的溅落痕迹，尚未擦净。地板上，一只断裂的袖扣滚落在排水口边缘，另一只或许还插在那件被扯破的西装上。", {}),
+// 16
+S("那件西装佩德罗穿并不好看，弗朗西斯想，但对于那样出众的容貌而言，这样的评价几乎像是苛责。葡萄牙人有一张被阳光吻过的脸，深棕色的头发，杏核状小鹿一样的眼眸，眼角下方缀着一颗泪痣。", {
+  textClass: 'narrator'
+}),
+// 17
+S("弗朗西斯记得他厨艺很好，甜品手艺几乎快要胜过自己。冰箱里还装着那盒蛋挞，是他初次拜访时带来的礼物。他们约会了三个月，或许对方以为这一次拜访能将他们的关系更进一步。", {
+  textClass: 'narrator'
+}),
+// 18
+S("弗朗西斯原本想给他一个干净利落的死法，蛋挞下一层的位置摆着一支注射器，预示着对方的命运。波诺弗瓦家族对这种药物控制得很仔细，他的另一个舅舅声称教皇都会用它来安乐死。可惜对方挣扎得过于激烈，像遇上捕猎者的鹿，活得孤注一掷，死得狼狈不堪。", {
+  textClass: 'narrator', heartbeat: true
+}),
+// 19
+S("很快，他将对方的遗物收拾妥当，连同酒店房间内的一块镇纸包裹在一起，最后他捡起那枚袖扣，擦净，将它收入风衣内袋。", {
+  heartbeat: false
+}),
+// 20
+S("窗外街道上，一辆运货车驶过，洒水声将这城市彻底洗净。弗朗西斯慢条斯理地戴上皮手套，整了整领口，顺手将酒店的一次性火柴盒塞进口袋——上面印着：\"We Deliver Luxury Without Consequences\"", {}),
+// 21
+S("或许他今晚该在这里碰碰运气。", { textClass: 'narrator' }),
+// 22 - Arthur intro
+S("亚瑟·柯克兰把自己摔进巷子尽头时，鞋底正踩在一个水洼中，溅了一身积水，他却毫不在意，整个人滑坐在砖墙边。", {
+  bg: 'linear-gradient(180deg, #0a0c12 0%, #0e1018 100%)'
+}),
+// 23
+S("他的左眉角挂着血，衬衣被扯裂，手里还捏着个皱巴巴的烟盒。回过神后，他靠着墙喘气，鼻梁下的伤口还在出血，在雨中那双眼睛亮得惊人，与其说像是刚被酒吧赶出去，不如说更像是在牌桌上连赢三把。", {}),
+// 24
+S("事实上他确实赢了。半小时前，他全身湿透地踏进那家酒馆，点了一杯金汤力，在吧台前晃荡着杯子，似乎准备用上一整晚来把它喝光。", {}),
+// 25
+S("来一手最小注。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 26
+S("他把两枚二十镑筹码拍在投注区上，语气轻描淡写，仿佛根本不想引起注意。起初根本没人在意他——直到他连续赢了三局，筹码在他面前越堆越高，像是替他建起了一座小型纪念碑。", {}),
+// 27
+S("你他妈是不是出千！", {
+  speaker: '赌徒', textClass: 'dialogue'
+}),
+// 28
+S("我不过是动了动脑子。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 29
+S("用脑子也是作弊。", {
+  speaker: '赌徒', textClass: 'dialogue'
+}),
+// 30
+S("等我把你的脑子糊在墙上再说这话吧。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 31
+S("他承认自己确实醉了些。当他第一拳砸在对方脸上，混战瞬间爆发，酒精和肾上腺素把他整个人点燃。他在一片砸瓶子的声音中被按在桌上，再跌在地上，最后被拎着丢出了后门，跌进夜雨如注的巷子，带着一身污泥和血痕。", {
+  sfx: 'glass', shake: true
+}),
+// 32
+S("烟盒里还剩下最后一根，他翻遍了口袋也没找到打火机。雨越下越冷，他却把脑袋重新靠回墙壁，闭上眼，这样的时候他实在想不到还能上哪去。", {}),
+// 33 - First meeting
+S("终于，他听到了脚步声。那声音显然不属于这片穷街陋巷，即使踩过水洼也丝毫不显得狼狈。脚步声在他附近停下了，亚瑟听见一阵轻响，像是有什么被丢进了旁边的垃圾桶，然后是一声干脆的火柴划燃声。", {
+  sfx: 'match',
+  bg: 'linear-gradient(180deg, #0e0a08 0%, #1a1410 100%)'
+}),
+// 34
+S("喂，有火吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 35
+S("对方愣了一下，显然没意识到他的存在。下一秒，一双穿皮鞋的脚步靠近了，他看到风衣的下摆轻轻一晃。那人弯下身，用刚划燃的火柴点燃了他的烟。短暂的火光照亮了他们的脸。", {}),
+// 36
+S("在路灯昏黄的光线下，那一头金发却奇异地散发着微光，像一轮朦胧的艳阳。那双深邃的眼睛泛着蓝紫色的幽光，但给他印象最深的是对方脸上稍纵即逝的阴沉和狠厉——像刀子藏在丝绒里，转瞬即逝，却绝不会是错觉。", {}),
+// 37
+S("谢了。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 38
+S("等一下。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 39
+S("亚瑟突然抬手勾住他风衣的一角，笑得带着恶意，\"这么晚在这边逗留，手套上还有血，你绝对有些不可告人的秘密吧。\"", {}),
+// 40
+S("你也知道这是秘密。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 41
+S("亚瑟怔了怔，接着笑得更大声，烟雾从鼻尖喷出来，\"那就带着它走吧。\"", {}),
+// 42
+S("那人抽回衣角，头也不回地走了。亚瑟还坐在原地，仰头吐烟。雨声盖过一切，他知道自己即将断片，于是抓紧最后的意识想了想刚才那张脸。他希望自己明天还能记得。然而，记忆总是欺骗他。", {}),
+// 43 - Francis POV, coffee shop
+S("对于弗朗西斯而言，一米左右是最安全的距离——能听见、能看见，却不会被拉进去。他习惯盯着人，学习他们的习惯、欲望和破绽。这是一种防御，也是一种渴望。他不相信语言，只相信肌肉的记忆。", {
+  bg: 'linear-gradient(180deg, #10100e 0%, #1a1815 100%)', textClass: 'narrator'
+}),
+// 44
+S("他用指甲轻轻敲着杯沿，像是在为即将开始的表演打拍子。那是他小时候在唱诗班里养成的习惯。", {}),
+// 45 - Antonio flashback
+S("在唱诗班的最后一年，他喜欢上一个叫安东尼奥的西班牙男孩。他们逃掉弥撒，溜到许愿池边，把整天都消磨在肆无忌惮的亲吻中。那男孩有双碧绿的眼睛，吻起来像夏天。", {
+  textClass: 'narrator', rain: false,
+  bg: 'linear-gradient(180deg, #14120a 0%, #201c10 100%)'
+}),
+// 46
+S("要是能一直这样就好了。", {
+  speaker: '安东尼奥', textClass: 'dialogue'
+}),
+// 47
+S("一直这样？他不知道。他从来不相信\"永远\"，他只相信那一刻。他等着一个拥抱，却等来了结局。", {
+  textClass: 'narrator'
+}),
+// 48
+S("家族很快发现了这一切。十四岁那年，他被勒令离开唱诗班。临走前一天，他们又去见了一次，还是那个地方，白鸽飞起的时候，他低头看着安东尼奥的眼睛。", {}),
+// 49
+S("然后，他亲手把那男孩按进池水里。", {
+  heartbeat: true, shake: true
+}),
+// 50
+S("他不记得对方有没有挣扎了。也许只是轻轻颤抖了一下，就像水面被被风掠过。第二天，尸体浮上来，他的舅舅没说一个字，而他则如期启程去往巴黎的寄宿学校。", {
+  heartbeat: false
+}),
+// 51
+S("那之后他将杀人当作一种语言，一种家族无法管控、也不屑理会的语言。他像一千零一夜中的国王，寻找梦中情人，然后杀掉他们。", {
+  textClass: 'narrator', rain: true,
+  bg: 'linear-gradient(180deg, #10100e 0%, #1a1815 100%)'
+}),
+// 52
+S("他在咖啡厅中观察着每一个人。他喜欢这家店的闪电泡芙，熟透的樱桃埋在奶油中，像是一颗殷红的心脏。《卫报》第十三版用十七个词总结了葡萄牙人的死讯：年轻有为，涉嫌毒品交易，溺亡。他当然知道不是真的溺死。", {}),
+// 53
+S("没有举报，没有目击者。连那个意外闯入现场的混蛋也像蒸发了一样。弗朗西斯等了整整一周，而那个麻烦都没有露面。那家伙就像是在穷街陋巷游荡的野猫，金绿色眼睛混杂着醉意，冒着凶光。他实在没办法忘掉那双眼睛。", {}),
+// 54 - Arthur bursts in
+S("门猛地被推开，风铃乱响。一个精瘦的身影滑进来，白衬衫已经湿透，那双眼睛在昏暗的灯光下泛着金绿的光。他看起来像劫后余生，却又带着一场风暴将至的气息。而他——走向了自己。", {
+  sfx: 'glass'
+}),
+// 55
+S("你在这里啊。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 56
+S("我是亚瑟·柯克兰。现在我有九十秒解释情况，然后那三个绅士会过来，把我拖出去，在某条巷子里用我自己的脑浆重新粉刷墙壁。别问我怎么知道的。你只需要配合我演这一出，保证这是你今年最有趣的一场戏。而且......我会欠你一个人情。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 57
+S("弗朗西斯不动声色地看着那三个人推开一对正在点单的情侣，向他们的桌子走来，他几乎能闻到他们手指上的火药气息。", {
+  heartbeat: true
+}),
+// 58
+S("30秒做决定，要不要赌一把。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 59
+S("根本用不了30秒，弗朗西斯想，甚至用不了三秒，但他刻意放慢了这个过程。", {
+  heartbeat: false
+}),
+// 60
+S("亲爱的小亚瑟，冒着这么大的雨来找我，我的确欠你一个人情。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 61
+S("你们两个认识？所以他是来见你的？", {
+  speaker: '头目', textClass: 'dialogue'
+}),
+// 62
+S("不然呢？我看起来像是来见你们的吗？很抱歉，亲爱的，我在这里没兴致了，或许你愿意带我去你家？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 63
+S("当然。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 64
+S("在头目犹豫的瞬间，弗朗西斯握住对方的手，推开门时他听到亚瑟低声说，\"左转，第二个路口右转，他们不知道那条路。\"", {}),
+// 65
+S("雨仍在下，但他们没时间撑伞。拐过几个弯，穿过一条窄巷，最后钻进一家古董书店。从书店的后门出去，他们进入了另一条街道，确认没人跟踪后，亚瑟终于放松下来，靠在一面砖墙上。", {}),
+// 66
+S("他们开始想办法清扫\"不稳定因素\"，这其中我排第一。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 67
+S("他们不记得你长什么样？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 68
+S("你能分得清老鼠吗？说实话，我没想到你会这么快进入状态。通常像你这样的人会直接起身让我滚开。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 69
+S("你知道这很容易让人误会。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 70
+S("误会什么？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 71
+S("亚瑟贴近一步，手指滑进他的风衣外兜，摸出一盒火柴。", {}),
+// 72
+S("误会你喜欢我啊。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// ========== CHAPTER 2: CONFLAGRATION ==========
+// 73 - Francis backstory: Arthur's lies
+S("在很长的一段时间内，亚瑟·柯克兰都没有撒过谎，但在那之后，他在每件事上都撒谎。", {
+  bg: 'linear-gradient(180deg, #0c0c14 0%, #14141f 100%)',
+  textClass: 'narrator',
+  chapterTitle: { en: 'CONFLAGRATION', zh: '炽烧' }
+}),
+// 74
+S("他能听出布里斯托尔和巴斯之间口音的差别，也知道曼彻斯特南郊的\"u\"音会比市中心发得更圆润。他能模仿东伦敦的工人口音，也能切换成若有若无的泰晤士河腔调，在高档公寓门厅和租金中介谈笑风生。", {
+  textClass: 'narrator'
+}),
+// 75
+S("但遇事的时候，他总是用曼彻斯特腔糊弄过去——因为曼市的人居无定所，干哪行的都有，不管你出现在哪，都不会显得格格不入。", {
+  textClass: 'narrator'
+}),
+// 76 - Arthur childhood
+S("相比之下，他的真实童年乏善可陈。那时他还住在北区郊外那幢破旧红砖楼里，楼下是个废弃工厂，晚上能听到铁锈和空壳机器在风里嘎吱作响。", {
+  bg: 'linear-gradient(180deg, #0e0c08 0%, #181410 100%)', rain: false
+}),
+// 77
+S("他坐在地板上，看着微波炉旋转。广播正播着南欧某地的地震。他忽然想，如果现在伦敦塌了也挺好，最好把他和厨房一起埋进去，就不用再去背单词、解释没人签字的联络本了。", {
+  textClass: 'narrator'
+}),
+// 78
+S("他把整盒意面倒在盘子里吃，面条没热透，胃却开始抽痛——那是他第一次觉得疼是一件好事，起码说明他还活着。", {}),
+// 79
+S("凌晨时分，窗外响起警笛。街对面，一个男人被警察按在地上，鼻青脸肿地被塞进警车。就在被推上车门前，他回头冲人群笑了一下。", {}),
+// 80
+S("据说那人是试图炸掉警察局或某个政府办公楼。他不太记得了，但那个笑他记了很多年。", {
+  textClass: 'narrator'
+}),
+// 81
+S("第二天他跑去图书馆查《少年法》，发现自己太小，负不了刑责。他想，如果能早两年出生该多好。从那天起，他把年龄也变成了一个谎言。", {}),
+// 82 - Arthur at Francis's apartment
+S("他出来时只穿了一件从衣柜中翻出来的白衬衫。衣服大了一号，袖子堆在手腕，松松垮垮地包裹着身体，他边走边扣扣子，一路走进客厅。", {
+  bg: 'linear-gradient(180deg, #0f0e14 0%, #1a1520 100%)', rain: true
+}),
+// 83
+S("你家真干净。你其实根本不住在这里吧？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 84
+S("你要的是浴室，又不是住处。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 85
+S("一千零一夜？怎么，你是喜欢看海盗故事，还是幻想自己是个中东贵族啊？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 86
+S("他随随手拎起沙发背上的牛仔裤穿上，刚刚弯下腰，一张塑封卡片从内袋滑出，落在地板上。", {}),
+// 87
+S("别动。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 88
+S("亚瑟·柯克兰，你的身份可比表现出来的贵。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 89
+S("你以为我为什么只用现金？别以为我不会读写，波诺弗瓦先生，F，我还在想这是什么名字，还是一句脏话？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 90
+S("弗朗西斯。弗朗西斯·波诺弗瓦。公平起见，我得告诉你不是吗？你说得对，我喜欢海盗和贵族的故事，只是这些故事对我而言，已经不再新鲜。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 91
+S("至少你今天有了新的收获。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 92
+S("然后他推门而出，消失在狂风骤雨中。", {}),
+// 93 - Hunting ground with Ivan
+S("弗朗西斯习惯把枪藏在驾驶座下面，他从不习惯用枪——但下命令的人才不会管他是不是习惯。", {
+  bg: 'linear-gradient(180deg, #080a0c 0%, #0e1214 100%)',
+  rain: true
+}),
+// 94
+S("他看到了猎场的牌子竖在夜幕中，浓雾笼罩下像个腐烂生疮的庞然大物。家族的人已经等候许久，一张新面孔，斯拉夫人的面孔。", {}),
+// 95
+S("伊万·布拉金斯基。目前在伦敦警局。", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 96
+S("警察应该不是第一次做这种事吧？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 97
+S("对我而言，是第一次，但我没得选。我想你也是吧？", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 98
+S("我当然不是没得选。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 99
+S("他看着伊万把那个箱子抱到卡车后座。他走到箱子前，掀开箱盖，竟出人意料地轻。终于看到了那颗毫无血色的头颅，下面连着瘦削的身子。尸体的头顶上有一个洞眼，薄薄的血痂黏在那头浅得发白的头发上，像是一枚红色的硬币。", {
+  heartbeat: true
+}),
+// 100 - Gilbert flashback
+S("基尔伯特。全名基尔伯特·贝什米特。他们是在大学认识的，那或许是他人生中最后一段自由时光了。", {
+  textClass: 'narrator', heartbeat: false, rain: false,
+  bg: 'linear-gradient(180deg, #12100a 0%, #1e1a10 100%)'
+}),
+// 101
+S("那个晚上他看着基尔伯特在夜店里同时完成课程讨论、通宵买醉和跟女生调情。那人身上有种古怪的感召力，总像是在对抗命运，又好像根本不把命运当回事。", {}),
+// 102
+S("你给我的感觉很奇怪，弗朗。你看起来就好像能预知死亡一样。", {
+  speaker: '基尔伯特', textClass: 'dialogue'
+}),
+// 103
+S("通常我只能预知自己的死亡。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 104
+S("一个月后他们坐在铁轨边喝着罐装啤酒，基尔伯特突然说：\"我觉得我脑子出问题了。看不见东西，手在抖。\"", {}),
+// 105
+S("我得买把枪。别这么看着我，弗朗，我知道你家族的关系。", {
+  speaker: '基尔伯特', textClass: 'dialogue'
+}),
+// 106
+S("我改变主意了。手抖成这个样子，我有责任替你完成。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 107
+S("那天夜里湖面有一层白雾，像未盖好的床单。他们并肩坐在车后尾门上。", {
+  bg: 'linear-gradient(180deg, #0a0c10 0%, #141820 100%)'
+}),
+// 108
+S("等我死后，你去把我画草稿的笔记本寄给那个女孩。配文我想好了，就写，等我死后你就知道我有多喜欢你。", {
+  speaker: '基尔伯特', textClass: 'dialogue'
+}),
+// 109
+S("像个混蛋。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 110
+S("啊，她会理解的。", {
+  speaker: '基尔伯特', textClass: 'dialogue'
+}),
+// 111
+S("那一枪很准，打穿了头骨，也打穿了过去。他走近确认对方彻底没了呼吸，才把枪放回车里。那时候他没有任何表情，只是抬头望了一眼天空，看见有星光。", {
+  sfx: 'gunshot', shake: true
+}),
+// 112
+S("那是他唯一一次希望有人从天上看着自己。", {
+  textClass: 'narrator'
+}),
+// 113 - Restaurant with Ivan, Arthur arrives
+S("之后他和伊万驱车去了不远处的一家小餐厅，灯光昏黄，空气里弥漫着甜菜汤和烤面包的味道。", {
+  bg: 'linear-gradient(180deg, #12100a 0%, #1e1a10 100%)', rain: true
+}),
+// 114
+S("吃这个会感觉好一点。", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 115
+S("我不怎么喜欢吃甜的。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 116
+S("但是你脸色很难看。就像是埋葬了自己的过去。", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 117
+S("那你应该给我一把铲子而不是糖。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 118
+S("你想喝酒吗？或者吃点什么？", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 119
+S("你觉得我杀了一个朋友之后，会因为有人请我喝一杯，就——就他妈重生了吗？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 120
+S("对不起，我......", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 121 - Arthur arrives
+S("真巧啊，波诺弗瓦先生。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue', sfx: 'glass'
+}),
+// 122
+S("他们同时转过头，看着亚瑟·柯克兰站在餐厅门口，他的金发乱糟糟的，其中挑染过的一抹红色格外醒目。然后他走上前，扬起手，把前台装糖果的玻璃罐整个倒在了他们的桌上。", {}),
+// 123
+S("这位是......弗朗，是你的朋友吗？", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 124
+S("只是个熟人而已。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 125
+S("是啊，我们过去在唱诗班一起唱歌。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 126
+S("布拉金斯基。伦敦警局。", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 127
+S("柯克兰。守法公民。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 128
+S("我们谈完了。伊万，回去的路上注意安全。我和他回去。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 129
+S("回哪里？", { speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue' }),
+// 130
+S("当然是回家。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 131 - Walking home, Francis's inner conflict
+S("街灯昏黄，雨后的柏油路面泛着一层薄薄的反光。弗朗西斯的手指在口袋里慢慢抚过冷硬的金属，最终停顿在了那个小巧的玻璃瓶上。", {
+  bg: 'linear-gradient(180deg, #0a0a12 0%, #12121f 100%)'
+}),
+// 132
+S("为什么每次我遇到麻烦，你都会出现？就好像你一直在暗中保护我一样，这让我觉得自己很特别。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 133
+S("大概是巧合吧。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 134
+S("巧合？连续三次都是巧合？弗朗，你要么是我的守护天使，要么就是个变态跟踪狂。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 135
+S("你更希望我是哪一个？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 136
+S("说实话？我希望你是个变态跟踪狂。至少那样的话，我就知道你是对我有想法了。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 137 - At the apartment, cocoa scene
+S("弗朗西斯并没有立即回应，但手已经悄无声息地握住了亚瑟的手腕。那一刻他突然意识到：对方没认出他。当然，他还是不能冒这个险。", {
+  bg: 'linear-gradient(180deg, #0f0e14 0%, #1a1520 100%)'
+}),
+// 138
+S("我太累了，每天都在和全世界最难缠的蠢货打交道。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 139
+S("很遗憾，世界上大部分人都是难缠的蠢货。热可可还是酒？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 140
+S("热可可，我现在不像个大人，别给我酒精。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 141
+S("二十五岁，弗朗，二十五岁才算真正长大。我希望自己能活过二十五岁，但谁又能事事如意呢？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 142
+S("上一次你在看《一千零一夜》。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 143
+S("其实我觉得《一千零一夜》只讲了一个故事，关于她每晚都要讲一个故事来拯救自己的生命。一千零一个夜晚，一千零一个故事。她一定乐在其中。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 144
+S("为什么这么说？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 145
+S("因为爱一个随时可能杀死你的人需要很大的勇气，不是吗？就像出海航行或是盗走宝藏一样危险，而这些，都是她亲身经历的故事。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 146
+S("也许她只是想证明自己的聪明才智。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 147
+S("也许。但我更愿意相信，有些人值得你为他们冒险，即使这意味着你可能会失去一切。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 148 - Poisoning
+S("弗朗西斯重新转向炉子，煮可可的动作很慢，像是在准备宗教仪式。他洒了一点肉桂粉，又加了几滴香草精，他的手在微微颤抖。最后他从口袋里取出那个小玻璃瓶，看着里面的白色粉末。", {
+  heartbeat: true
+}),
+// 149
+S("\"只需要一点点，\"伊万的声音在他脑海中回响，\"别把事情搞复杂。\"使用得当的话，只要十五分钟对方就会在昏睡中停止呼吸。", {
+  textClass: 'narrator'
+}),
+// 150
+S("我可以弹这个吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue', heartbeat: false
+}),
+// 151
+S("当然。你会弹？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 152
+S("不会啊。但所有人都以为我会，是不是很厉害？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 153
+S("弗朗西斯将可可放在茶几上。两杯看起来毫无二致，他想，除了他自己，恐怕没人能够分辨。", {
+  heartbeat: true
+}),
+// 154
+S("这是一个朋友留下的，他已经去世了。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue', heartbeat: false
+}),
+// 155 - Roderich flashback
+S("他第一次见到罗德里赫，是在维也纳的一场个人音乐会上。那时弗朗西斯刚大学毕业不久，凝视着那张专注的侧脸，看着那双手如何在琴键上抚摸、滑动——他想，那简直太过火了，就像在调情一般。", {
+  textClass: 'narrator', rain: false,
+  bg: 'linear-gradient(180deg, #10100a 0%, #1c1a12 100%)'
+}),
+// 156
+S("你买吉他了？", {
+  speaker: '罗德里赫', textClass: 'dialogue'
+}),
+// 157
+S("偶然买的，放在公寓也没怎么碰。你不喜欢？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 158
+S("我不知道。我只是觉得害怕，觉得像是被抛弃了一样。钢琴和古典乐已经过时了，大家都更热爱简单、直接、粗暴的声音......", {
+  speaker: '罗德里赫', textClass: 'dialogue'
+}),
+// 159
+S("那就是我的命。在被遗忘之前离场，总好过等待观众离席。", {
+  speaker: '罗德里赫', textClass: 'dialogue'
+}),
+// 160
+S("你会记得我吗？", {
+  speaker: '罗德里赫', textClass: 'dialogue'
+}),
+// 161
+S("不一定。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 162
+S("弗朗西斯盯着他的侧脸，轻轻地往前推了一把。之后他站在原地，没有俯视，也没有走开。他只是安静地收回手，像是终于完成了一项迟来的义务。", {
+  shake: true
+}),
+// 163 - Back to present, Arthur singing
+S("这首你应该听过。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue',
+  rain: true, bg: 'linear-gradient(180deg, #0f0e14 0%, #1a1520 100%)'
+}),
+// 164
+S("When you were here before, couldn't look you in the eye...\nYou're just like an angel, your skin makes me cry...", {
+  textClass: 'lyrics'
+}),
+// 165
+S("I wish I was special, you're so fuckin' special...\nBut I'm a creep, I'm a weirdo...", {
+  textClass: 'lyrics'
+}),
+// 166
+S("这首歌挺适合你的。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 167
+S("你知道我为什么喜欢喝苦的吗？因为苦味曾经是贵族才能消费的奢侈品。可可、红茶、咖啡，这些苦东西哪一样不是高高在上的玩意儿，所以我每一次喝这些东西都觉得这些大人物几百年的力量正被我吞入体内。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 168
+S("这些东西，就算在那个贵族独享的年代，你也有本事弄到手。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 169
+S("当然。我可以砍了贵族的头，发动革命，自己爬上去喝。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 170
+S("你真是法国人的噩梦。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 171
+S("那太好了。你可以多梦见我几次。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 172
+S("亚瑟的声音越来越低，歌词越来越含糊，直到最后，他把头埋进了吉他和沙发之间，手指还搭在琴弦上，像是在守住什么，他的胸口还在缓慢起伏，呼吸浅得几乎听不见。", {}),
+// 173
+S("弗朗西斯没有立刻起身，甚至没有第一时间确认心跳。他只是坐在那里，慢慢地数着时间，十五分钟，大概刚刚好。最后他起身拿起那只玻璃瓶，扣上软木塞。瓶中的白色粉末还剩下一半。", {
+  heartbeat: true
+}),
+// 174 - CHOICE 1: Arthur wakes
+S("亚瑟醒来时头痛欲裂，胸口发闷，胃疼得像在灼烧。有那么一瞬间，他以为自己要死掉了。但他还活着，心跳得很快，五脏六腑都在打颤，脑子像被烧化——但他确实，活着。", {
+  heartbeat: false,
+  bg: 'linear-gradient(180deg, #0c0a10 0%, #161220 100%)'
+}),
+// 175
+S("他咽下去的绝对就是那个味道。但问题在于自己为什么活着？", {
+  textClass: 'narrator',
+  choices: [
+    { text: '去找弗朗西斯', next: 176 },
+    { text: '趁现在逃走', next: 341, flag: 'ch1', value: 'leave' }
+  ]
+}),
+// 176 - Bathroom confrontation
+S("去他妈的，他边走边想，换做谁都该第一时间跑掉，为自己苟且的余生放声庆祝，但他就是不一样。", {
+  bg: 'linear-gradient(180deg, #0c0a10 0%, #161220 100%)'
+}),
+// 177
+S("他直接推开了浴室的门。热雾弥漫，水珠顺着弗朗西斯的金发滑落，打湿了他光裸的肩膀。", {}),
+// 178
+S("我以为你已经走了呢。我睡得不太好，你可能要为此负责。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 179
+S("我说——你昨晚差点让我死掉。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 180
+S("差点？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 181
+S("你洗澡是因为没有犯罪现场要处理，还是洗干净准备办事啊？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 182
+S("他突然歇斯底里地大笑起来，他能感觉到内脏的钝痛，但这没能阻止他主动贴近，湿冷的衣服碰上对方还带着水汽的皮肤，嘴唇轻轻擦过弗朗西斯的下颌。", {}),
+// 183
+S("你甚至帮我换了衣服，很会照顾人嘛。你觉得我应该像个病人一样卧床而终。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 184
+S("你真不该这么对我。昨天晚上我很开心，真的，我从来没有这么开心过。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 185
+S("有那么几秒钟，他们似乎都在等着对方先动作，最终亚瑟扯开湿透的衣服，猛地攀上弗朗西斯的脖颈，那几乎不能算作一个吻，而更像是撕扯，仿佛他非要用仅存的一点攻击性来确信自己还活着。", {}),
+// 186
+S("你该让我在那一刻就死掉，弗朗。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 187
+S("这倒还真是你会做出来的选择。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 188
+S("他醒来时像个被丢上岸的溺水者。他站起身，走到餐桌前坐下，目光追随着正在做早餐的弗朗西斯。", {}),
+// 189
+S("我还可以继续住在这里吧？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 190
+S("当然。你为什么这么问？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 191
+S("亚瑟低着头，切开蛋黄，让阳光流淌过他的刀背，然后迫不及待地送进口中，没有苦味，一切如旧。", {}),
+// 192
+S("因为我贱啊。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+
+// ========== CHAPTER 3: ASHES ==========
+// 193 - Francis visits mother
+S("家族禁止弗朗西斯去疗养院探望他的母亲。更确切地说，除了她的兄弟们，他们禁止任何人探望她。", {
+  bg: 'linear-gradient(180deg, #0e0c0a 0%, #1a1610 100%)',
+  rain: false, textClass: 'narrator',
+  chapterTitle: { en: 'ASHES', zh: '余烬' }
+}),
+// 194
+S("弗朗西斯决定无视家族禁令，去探望玛丽安娜·波诺弗瓦。两天后，他带上鲜花、水果、巧克力和蛋糕，怀揣着深重的情意与刻骨的恐惧，走进了尼斯的疗养院大厅。", {}),
+// 195
+S("他拿起一份报纸，阅读时看到一篇关于伊万·布拉金斯基的文章——《来自前苏联的英雄探员》。文章详细描述了他的成就，其中一则是他找到了失踪德国工程师基尔伯特·贝什米特的尸体。", {}),
+// 196
+S("他不堪病痛之苦，所以选择自我了断。但我们没有找到凶器，因此不排除其他可能。", {
+  speaker: '伊万（报纸引述）', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 197
+S("玛丽安娜·波诺弗瓦穿着一身白衣，头发散乱，看上去比他印象中更憔悴。当她看到弗朗西斯时，一下子冲过来，泪流满面地抱住了他。", {}),
+// 198
+S("我还以为再也见不到你了呢。", {
+  speaker: '玛丽安娜', textClass: 'dialogue'
+}),
+// 199
+S("没有人拦得住我们的孩子，即使我父亲派出他所有的儿子和手下也无济于事。看看，你多帅啊......", {
+  speaker: '玛丽安娜', textClass: 'dialogue'
+}),
+// 200
+S("她的声音戛然而止，眼神越过弗朗西斯的肩膀，凝固在某个可怕的点上。弗朗西斯无需回头便知危险已至。", {
+  heartbeat: true
+}),
+// 201
+S("我们不是来探望的。你也不该来，你知道规矩的。", {
+  speaker: '舅舅', textClass: 'dialogue'
+}),
+// 202
+S("我只是被吓到了。我很久没收到她的消息。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 203
+S("这说明你越界了。", {
+  speaker: '舅舅', textClass: 'dialogue', heartbeat: false
+}),
+// 204 - Back at apartment, Arthur with newspaper
+S("回到公寓后他看到亚瑟躺在沙发上看报纸，桌上堆满了速食和吐司片的包装袋，一根烟在他的嘴角忽明忽暗。", {
+  bg: 'linear-gradient(180deg, #0f0e14 0%, #1a1520 100%)', rain: true
+}),
+// 205
+S("我以为你不会再回来了。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 206
+S("你为什么会这么想？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 207
+S("直觉。不辞而别的场景太多了。就像霍金德·康纳德，那位荷兰银行家，在赚钱方面简直是个天才。圣诞节前一周他离开家，自此再未回来。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 208
+S("弗朗西斯捡起那张报纸，看到伊万的报道在第四版。那篇文章旁边有个铅笔记号，基尔伯特的名字下面画了一道横线。", {}),
+// 209
+S("你还挺忙的嘛。之前是鹿特丹，这次是尼斯，下一次准备去哪？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 210
+S("你认识霍金德，对吧？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 211
+S("嗯。那时候我十九岁，他二十四。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 212
+S("他喜欢我。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 213
+S("你呢？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 214
+S("我让他觉得我也喜欢他。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 215
+S("亚瑟慢慢走过去，从后面抱住他，把头搁在他背上。", {}),
+// 216
+S("真恶心。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 217
+S("工作总是恶心的。那是我的第一个任务。霍金德......他总是很聪明，但没聪明到留给自己一条活路。圣诞节前一周，我邀请他去搭乘加莱出发的游轮。尸体呢？鲨鱼笼。沉进海里，打开笼门。天亮前就只剩骨架。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 218
+S("你的家人，他们对这个结果满意吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 219
+S("可能吧。他们给了我股权。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 220
+S("我在想一件事。你会不会也正在骗我？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 221
+S("你希望你在吗？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 222
+S("我希望你在。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 223 - Arthur at the casino
+S("亚瑟将那些剪报排列在地板上。事故、自杀、意外身亡……这些词语在他眼前飞舞着，每一个字母都仿佛融化成液态的水滴。", {
+  bg: 'linear-gradient(180deg, #0a0a12 0%, #12121f 100%)', rain: true
+}),
+// 224
+S("就这样，他把家里能用来杀人的东西全都藏起来。厨房的菜刀被他丢进垃圾袋，酒瓶被砸碎，绳子藏进洗衣机后面的夹缝，连平底锅都拆了手柄。他甚至小心翼翼地把弗朗西斯藏枪的抽屉拆了一遍，钥匙藏在自己床垫底下。", {}),
+// 225
+S("在那之后他做出了一个更加大胆的决定：他去了波诺弗瓦的赌场。", {}),
+// 226
+S("他开始算牌。荷官发牌时，他刻意用余光扫过对方递牌的节奏、洗牌的手势，以及发牌时下意识的目光停留。他有条不紊地记牌，默算，下注越来越大。", {}),
+// 227
+S("当他的筹码堆积如山时，亚瑟终于站起身。他点燃一根烟，慢慢环视着周围那些紧张的面孔，然后做了一件令所有人都目瞪口呆的事——他把所有的筹码都推到了桌子中央。", {}),
+// 228
+S("给家族的。顺便提醒他们，这批荷官该换了。我用了整整半小时他们才发现我在算牌，这效率实在是......令人失望。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 229 - Confrontation
+S("弗朗西斯在公寓门口等他，脸色阴沉。", {
+  bg: 'linear-gradient(180deg, #0f0e14 0%, #1a1520 100%)'
+}),
+// 230
+S("你到底想干什么？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 231
+S("我在做我最擅长的事，就和你一样。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 232 - CHOICE 2: How Arthur confronts
+S("你杀人，没人过问。连尸体都能妥善处理。我算个牌，难道就该被处决？别恶心我了，弗朗，我不是你家族的人，也没必要遵守他们的狗屁规则。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue',
+  choices: [
+    { text: '继续逼问（激进）', next: 233, flag: 'confront', value: 'aggressive' },
+    { text: '冷静揭露（精准）', next: 233, flag: 'confront', value: 'calculated' }
+  ]
+}),
+// 233
+S("佩德罗·卡里埃多——溺亡；罗德里赫·埃德尔斯坦——坠楼......而你，每一次都在他们最后出现的地方。这些人都和你有关系，对吧？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 234
+S("亚瑟。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 235
+S("还有那个德国人，基尔伯特·贝什米特。警方查出来了死亡时间，碰巧就是我们见面的那天。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 236
+S("闭嘴。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 237
+S("所以这就是你的模式，对吧？先是接近那些人，然后......啪！又一个意外死亡。你的家族以为你是在为他们工作，实际上你只是在满足自己的......", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 238
+S("弗朗西斯的手突然扣住了他的喉咙。", {
+  shake: true, heartbeat: true
+}),
+// 239
+S("我说了，闭嘴。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 240
+S("那你为什么不杀了我啊，国王陛下？是因为我讲的故事够精彩吗？还是因为你开始在乎了？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 241
+S("拳头重重地砸在他脸上，亚瑟被打得踉跄后退。他抹掉嘴角的血，感觉一边的脸颊已经肿起来了。", {
+  shake: true
+}),
+// 242
+S("你会像对待他们一样对待我吗？毒气？子弹？还是推下楼？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 243
+S("你已经试过了，对吧？但你失败了。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 244
+S("我可以试第二次。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue', heartbeat: false
+}),
+// 245
+S("有种就来啊！", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 246
+S("亚瑟用尽全身力气推开对方，踉跄着跑向卧室，关上了门，锁芯转动的声音在寂静中显得格外响亮。他靠着门坐下，浑身颤抖。", {}),
+// 247
+S("他从枕头下摸出那个小玻璃瓶，弗朗西斯之前把它遗落在厨房。他找人检查了里面的东西，确定了这是一种无色无味的毒剂。", {}),
+// 248
+S("过了一会儿，他听到外面有钥匙转动的声音。", {}),
+// 249
+S("你要是再敢碰我，我就杀了你。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 250
+S("我还好奇你为什么不把它处理掉呢，就像你处理掉菜刀和子弹一样。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 251 - CHOICE 3: Light the powder
+S("亚瑟拧开瓶盖，将剩余的白色粉末全部倒在床头的小碟子里。划燃火柴，点亮蜡烛，橘黄的火焰在昏暗中跳跃着。", {
+  sfx: 'match', candle: true,
+  bg: 'linear-gradient(180deg, #12100a 0%, #1e1a10 100%)',
+  choices: [
+    { text: '点燃粉末', next: 252, flag: 'gas', value: 'light' },
+    { text: '把它扔掉', next: 341, flag: 'gas', value: 'discard' }
+  ]
+}),
+// 252
+S("一股奇怪的甜腥味开始在房间里弥漫。亚瑟盯着那缕白烟慢慢升起，像是某种古老的仪式。也许这就是死亡的感觉，他想，比想象中要温柔得多。", {
+  candle: true
+}),
+// 253
+S("我从小就是伴随着这种味道长大的。可能那段时间本身就像是一场梦。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 254
+S("我的母亲是波诺弗瓦家族教父的女儿，集千万宠爱于一身。而她的不幸在她爱上我父亲的那一刻才开始。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 255
+S("我父亲是个警察。一个像布拉金斯基一样的警察，没身份，没背景，怀揣着一腔热血和将坏人绳之以法的野心。他花了整整六个月才意识到自己爱上的女人究竟来自什么样的家庭。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 256
+S("他没有离开她。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 257
+S("没有，他们爱得死去活来。家族给了我父亲一个机会，其实根本不算机会。而另一个不幸就是，我的母亲在那时候怀孕了。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 258
+S("我三个月大的时候，他们从宴席上带走了他，没人知道发生了什么，但我的母亲坚信，是他的父亲和兄弟一枪打穿了她丈夫的脑袋。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue', sfx: 'gunshot'
+}),
+// 259
+S("你知道一个三个月大的婴儿面对那种场面会怎么样吗？什么都不会发生。我甚至没有哭。但我母亲，她从那一刻起就疯了。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 260
+S("终于有一天，她真的试图带我去找他——从三楼的窗户。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 261
+S("所以你恨他们。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 262
+S("不，我曾经最大的愿望就是得到他们的认可，成为家族的一员——这就是我人生中的第二个错误。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 263
+S("我怕他们，亚瑟，我这辈子都在怕他们。你以为我杀那些人是为了什么？为了挑衅？为了发泄？为了证明？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 264
+S("我杀他们，是因为爱他们让我觉得自己还像个人。而当我开始觉得自己像个人的时候，我就必须把这种感觉扼杀掉。因为人是有弱点的，亚瑟。人会被利用，会被威胁，会被毁掉。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 265
+S("那我呢？为什么我活下来了？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 266
+S("因为，你是我的第三个错误，这让我......", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 267
+S("这让你什么？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 268
+S("这让我想要变成一个真正的人。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 269
+S("电话铃声终于响起，弗朗西斯猛地跳起来，冲到窗边打开窗户，冷风瞬间涌入房间。那种甜腥味开始被稀释。", {
+  candle: false
+}),
+// 270
+S("是伊万·布拉金斯基。他们开始调查我了。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 271 - Church scene
+S("废弃的圣安德鲁教堂在夜雨中显得格外阴森，破碎的彩色玻璃在闪电的照耀下投下诡异的光影。", {
+  bg: 'linear-gradient(180deg, #08080e 0%, #0e0e1a 100%)',
+  rain: true, candle: true
+}),
+// 272
+S("你脸色不太好。", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 273
+S("这段开场白你上次用过了。你想问我基尔伯特·贝什米特的事情？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 274
+S("我们在湖边发现了一些新的证据，弹道报告和你的枪完全吻合。但家族准备放弃我了，对吧？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 275
+S("家族担心你有了弱点。你的父亲就是因为这个而死的。而现在你......", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 276
+S("现在我重蹈覆辙。所以他们派了你来。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 277
+S("他们也给了你一个机会。", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 278
+S("不过我很好奇，伊万。如果我真的杀掉亚瑟·柯克兰，你会很乐意填补那个空缺，对吧？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 279
+S("你......你在说什么？", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 280
+S("还要继续装下去？从第一次见面开始，你的目光就不对劲。餐厅里的糖果，关切的询问......你以为我杀了朋友之后会感激你的安慰，然后感动得以身相许？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 281
+S("不！我做这些......是因为我在乎你！从第一次见到你开始，我就......", {
+  speaker: '伊万', speakerClass: 'ivan-voice', textClass: 'dialogue'
+}),
+// 282
+S("他的话被一声钝响打断了。子弹精准地穿透胸膛，鲜血瞬间染红浅色大衣。在烛光的映照下，那摊血迹格外的刺眼。", {
+  sfx: 'gunshot', shake: true
+}),
+// 283
+S("弗朗西斯猛地转身，看到了阴影中走出的身影——亚瑟手里握着他的枪，正慢慢地把消音器拧下来，他看起来很虚弱，但手没有抖。", {}),
+// 284
+S("我跟着你来的。看起来我这个守法公民来得正是时候。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 285
+S("你为什么......", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 286
+S("因为我不想让你一个人面对这些。而且，我觉得我们确实需要谈谈。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 287
+S("教堂中重新陷入了寂静，只有雨水敲打屋顶的声音。伊万的血慢慢扩散在古老的石地板上，像是某种献祭仪式的一部分。", {}),
+// 288
+S("谈什么？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 289
+S("谈我们的去向，就像当年你的父母那样。因为现在，我们真的走投无路了。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 290 - Cleaning up
+S("处理一具尸体比亚瑟想象中要麻烦得多。他们花了将近一个小时才把伊万的血迹清理干净，所幸雨水从破损的屋顶渗进来，提供了一些便利。", {}),
+// 291
+S("他们最终坐在教堂前排的长椅上，面对着破损的十字架。", {
+  candle: true
+}),
+// 292
+S("你知道吗，我一直很羡慕那些生在大家族中的人。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 293
+S("小时候我总是坐在窗边，看着街对面那户人家。他们每天晚上都会一起吃晚饭，父亲、母亲、两个孩子。餐厅的灯总是很亮，我能看到他们在笑，在说话。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 294
+S("后来房子被卖掉了。我搬出来的那天，什么都没带走，就像我从来没有在那里生活过一样。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 295
+S("你想念那里吗？那家人，那两个孩子？", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 296
+S("我想念那种可能性。想念本来应该在那里发生但从未发生的一切，本来应该有的温暖，本来应该有的关怀，本来应该有的......归属感。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 297
+S("也许这就是为什么我一直在寻找。寻找一种让我觉得自己真正属于某处的感觉。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 298
+S("你那些可爱的家人，他们不会放过我们的，对吧？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 299
+S("我知道。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 300 - CHOICE 4: Run or burn
+S("我们可以跑，抛下一切，我们可以做得比你父母更彻底——或者......", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue',
+  choices: [
+    { text: '炸掉赌场', next: 302, flag: 'finale', value: 'burn' },
+    { text: '一起逃走', next: 342, flag: 'finale', value: 'run' }
+  ]
+}),
+// 301 - placeholder
+S("", { next: 302 }),
+// 302 - Burn path
+S("我们不走。那座赌场，波诺弗瓦家族的心脏，合法生意最主要的收入来源。我们把它炸掉。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 303
+S("他勾起嘴角，想起多年前那个被塞进警车的男人，现在他终于明白了那个笑容的含义——不是绝望，而是某种更纯粹的东西。自由。毁灭一切后的终极自由。", {
+  textClass: 'narrator'
+}),
+// ========== CHAPTER 4: FINALE ==========
+// 304
+S("赌场的中控室原本是一间贵宾厅，天花板上的水晶灯还残留着过往的烟味和粉尘。弗朗西斯把最后一根引线接进控制器时，亚瑟靠在皮质沙发上喘着气。", {
+  bg: 'linear-gradient(180deg, #0c0a08 0%, #1a1510 100%)',
+  rain: false, candle: false,
+  chapterTitle: { en: 'FINALE', zh: '终章' }
+}),
+// 305
+S("如果最后一夜太过难忘，你会想要重来一次吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 306
+S("那不就是我一直容忍你的原因？这就是此刻的意义。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 307
+S("意义个屁。你这辈子都在追求死后的意义，而事实上死了就是死了。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 308
+S("那就不道别。我们整晚都会在一起，我不会让你在黑暗中死去的。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 309
+S("你是认真的吗？我们真要这么死吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 310
+S("你想反悔？现在还不晚。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 311
+S("怎么可能呢？我腿软到站不起来了。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 312
+S("别搞砸了，我不想在这破地方死得难看。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 313
+S("你死在哪都不会难看。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 314
+S("空气安静了很久，只有定时器滴答声。", {
+  tick: true
+}),
+// 315
+S("你花光自己的余生，制定了一个又一个将我骗到手杀掉的计划，然后在第二天早上半途而废，独自离开，留下我思考自己为什么会被骗。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 316
+S("出于某种原因，这句话让弗朗西斯笑了。也许是因为那种荒谬感，也许是因为亚瑟说得太对了。他俯下身，他们开始拥吻。这个吻尝起来像是告别，像是所有未说出口的话语。", {
+  tick: false
+}),
+// 317
+S("你知道我什么时候最爱你吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 318
+S("在你会因为我笑的时候。不是普通的笑，那种是忍不住的。我说的是微笑，你懂吗？微笑必须要有意识才能做到。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 319
+S("真该死，当我说要炸掉这里的时候，你对着我笑了，然后我就在想，为了这一刻死掉也不赖。", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 320
+S("那就闭上眼。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 321
+S("亚瑟闭了眼，但还在笑。他喜欢这种感觉，喜欢到足以让他丢下自己的大学徽章和黑色筹码，走进了那间屋子。重要的是，他们有了属于自己的地方。", {}),
+// 322
+S("他从弗朗西斯的口袋里拿出最后一根烟，叼在嘴里，弗朗西斯拿出打火机把烟点燃。", {
+  sfx: 'match'
+}),
+// 323
+S("火光闪烁的瞬间，亚瑟想起了第一次在弗朗西斯家里过夜的晚上，弗朗西斯给他冲了热可可，苦中带甜，就像他们之间的关系。", {
+  textClass: 'narrator'
+}),
+// 324
+S("他深深地吸了一口，吸到头昏脑胀，恐惧随着吐出的烟雾渐渐消散。他希望能和那个人共度一生，而对方则只想和他共度一夜。但也许一夜就够了。", {
+  textClass: 'narrator'
+}),
+// 325
+S("你爱我吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 326
+S("弗朗西斯平静地点头，就像承认一个简单的事实。", {}),
+// 327
+S("3，2——", {
+  tick: true, heartbeat: true
+}),
+// 328
+S("你恨我吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 329
+S("比爱还多。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 330
+S("现在会少一点吗？", {
+  speaker: '亚瑟', speakerClass: 'arthur-voice', textClass: 'dialogue'
+}),
+// 331
+S("嗯，少了一点吧。", {
+  speaker: '弗朗西斯', speakerClass: 'francis-voice', textClass: 'dialogue'
+}),
+// 332
+S("1——", {
+  tick: false, heartbeat: false
+}),
+// 333 - EXPLOSION
+S("世界在一片白光中消失了，就像从来没有存在过一样。", {
+  flash: true, sfx: 'explosion', shake: true,
+  bg: 'linear-gradient(180deg, #ffffff 0%, #0a0a0f 100%)'
+}),
+// 334 - Epilogue
+S("人们称那是人类史上最辉煌的一年，甚至有人夸口在洛杉矶街头看到了上帝的身影。", {
+  bg: 'linear-gradient(180deg, #0a0a0f 0%, #12121f 100%)',
+  rain: true, textClass: 'narrator'
+}),
+// 335
+S("德国人在柏林墙倒塌后度过了第一个完整的春天；英格兰队在友谊赛中取得胜利，欢呼声在每一个小酒吧回荡；东欧市场被西方接管；广告牌上的画报女郎换成了戴着细框眼镜的程序员；曙光逐渐晕染了全球的地图。", {
+  textClass: 'narrator'
+}),
+// 336
+S("1994年冬，一座老旧赌场在爆炸中化为焦土，伤亡惨重。警方称起火原因是电线短路，或是烟灰缸倾倒造成的失火。也有人说那是某个黑手党家族自我清洗的最后火花。", {
+  textClass: 'narrator'
+}),
+// 337
+S("东区的报纸为此刊登了三天讣告，第四天开始登出圣诞折扣的广告。伦敦再次陷入细雨和沉默中，报纸仍湿，香烟仍贵，甜品仍然塌陷。街头巷尾弥漫着热巧克力与汽油的味道，甜蜜粘腻到像是要将这一刻彻底封存。", {
+  textClass: 'narrator'
+}),
+// 338
+S("几个月后，赌场原址竖起重建告示牌，蓝底白字，标语写着：", {
+  textClass: 'narrator'
+}),
+// 339
+S("\"你正踏入未来。\"", {
+  textClass: 'narrator',
+  bg: 'linear-gradient(180deg, #0a0a0f 0%, #0a0a0f 100%)'
+}),
+// 340 - END
+S("—— 全剧终 ——\n\nSTRIKE\n\n感谢游玩。", {
+  textClass: 'narrator',
+  rain: false,
+  next: 340
+}),
+
+// ========== BAD ENDINGS ==========
+// 341 - Leave / Discard ending
+S("亚瑟转身离开了公寓，走进了伦敦永无止境的雨中。他没有回头。有些故事注定不会被讲完，有些火焰注定不会被点燃。", {
+  bg: 'linear-gradient(180deg, #0a0a0f 0%, #0a0a0f 100%)',
+  rain: true, textClass: 'narrator', next: 340
+}),
+// 342 - Run ending
+S("他们在黎明前离开了伦敦，坐上了开往多佛的末班列车。窗外的英格兰在雨中渐渐模糊，像一幅正在被水浸透的油画。", {
+  bg: 'linear-gradient(180deg, #0a0c12 0%, #141820 100%)',
+  rain: true, textClass: 'narrator'
+}),
+// 343
+S("他们没有炸掉赌场，没有留下任何痕迹。波诺弗瓦家族继续运转，像一台永不停歇的机器。而他们，成了两个没有名字的人，在某个南欧小镇的咖啡馆里，喝着苦得发涩的浓缩咖啡。", {
+  textClass: 'narrator'
+}),
+// 344
+S("也许这就是另一种结局。不是爆炸，不是毁灭，而是缓慢地、安静地，消失在世界的边缘。\n\n—— 结局：余烬未尽 ——\n\n感谢游玩。点击章节选择可重新体验其他路线。", {
+  textClass: 'narrator', rain: false, next: 340
+})
+];
+
+</script>
+</body>
+</html>
